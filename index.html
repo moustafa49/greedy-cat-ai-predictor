@@ -1,14 +1,25 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Greedy Cat MAX — QUANTUM AI</title><style>
+<title>Greedy Cat MAX — QUANTUM AI</title>
+
+<style>
 body{font-family:Arial;background:#020617;color:white;text-align:center;padding:20px}
 h1{color:#22c55e}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px}
 button{padding:12px;font-size:22px;background:#1e293b;color:white;border:none;border-radius:8px;cursor:pointer}
 .section{margin-top:16px}
 canvas{background:black;border-radius:10px}
-</style></head><body><h1>Greedy Cat MAX — QUANTUM AI</h1><div class="grid">
+</style>
+
+</head>
+
+<body>
+
+<h1>Greedy Cat MAX — QUANTUM AI</h1>
+
+<div class="grid">
 <button onclick="add('corn')">🌽</button>
 <button onclick="add('tomato')">🍅</button>
 <button onclick="add('carrot')">🥕</button>
@@ -17,26 +28,50 @@ canvas{background:black;border-radius:10px}
 <button onclick="add('shrimp')">🦐</button>
 <button onclick="add('cow')">🐄</button>
 <button onclick="add('chicken')">🐔</button>
-</div><button onclick="undo()">Undo</button>
+</div>
+
+<button onclick="undo()">Undo</button>
 <button onclick="reset()">Reset</button>
 
 <div class="section"><b>Last 20</b><div id="history"></div></div>
+
 <div class="section"><b>Repeat</b><div id="repeat"></div></div>
-<div class="section"><b>Wave / Trap</b><div id="wave"></div></div>
-<div class="section"><b>Bias</b><div id="bias"></div></div>
+
+<div class="section"><b>Absence</b><div id="absence"></div></div>
+
+<div class="section"><b>Cycle Detector</b><div id="cycle"></div></div>
+
+<div class="section"><b>Probability Drift</b><div id="drift"></div></div>
+
+<div class="section"><b>Game Behaviour</b><div id="behaviour"></div></div>
+
 <div class="section"><b>Prediction</b><div id="prediction"></div></div>
+
 <div class="section"><b>Top5</b><div id="top5"></div></div>
-<div class="section"><b>Top6</b><div id="top6"></div></div><div class="section">
+
+<div class="section"><b>Top6</b><div id="top6"></div></div>
+
+<div class="section">
 <b>Strategy</b>
 <div id="safe"></div>
 <div id="balanced"></div>
 <div id="aggressive"></div>
-</div><div class="section"><b>Probability</b><div id="prob"></div></div>
-<div class="section"><b>Monte Carlo</b><div id="monte"></div></div><div class="section">
+</div>
+
+<div class="section"><b>Probability</b><div id="prob"></div></div>
+
+<div class="section"><b>Monte Carlo</b><div id="monte"></div></div>
+
+<div class="section">
 <b>Radar</b>
 <canvas id="radar" width="300" height="300"></canvas>
-</div><div class="section"><b>Confidence</b><div id="confidence"></div></div>
-<div class="section"><b>Accuracy</b><div id="accuracy"></div></div><script>
+</div>
+
+<div class="section"><b>Confidence</b><div id="confidence"></div></div>
+
+<div class="section"><b>Accuracy</b><div id="accuracy"></div></div>
+
+<script>
 
 const foods=["corn","tomato","carrot","pepper","fish","shrimp","cow","chicken"]
 
@@ -115,6 +150,22 @@ return last?emoji[last]+" x"+c:""
 
 }
 
+/* Absence */
+
+function absence(food){
+
+for(let i=history.length-1;i>=0;i--){
+
+if(history[i]==food){
+return history.length-i-1
+}
+
+}
+
+return history.length
+
+}
+
 /* Momentum */
 
 function momentumEngine(){
@@ -164,24 +215,6 @@ return (transitionMatrix[last][food]||0)*0.5
 
 }
 
-/* Absence */
-
-function absenceScore(food){
-
-let lastSeen=history.lastIndexOf(food)
-
-if(lastSeen==-1) return 3
-
-let gap=history.length-lastSeen
-
-if(gap>10) return 3
-if(gap>6) return 2
-if(gap>4) return 1
-
-return 0
-
-}
-
 /* Wave */
 
 function waveScore(food){
@@ -212,6 +245,67 @@ return 0
 
 }
 
+/* Cycle Detector */
+
+function cycleDetector(){
+
+if(history.length<20) return "No Cycle"
+
+let last6=history.slice(-6).join("-")
+
+for(let i=0;i<history.length-12;i++){
+
+let seq=history.slice(i,i+6).join("-")
+
+if(seq===last6){
+return "Cycle Pattern Detected"
+}
+
+}
+
+return "None"
+
+}
+
+/* Probability Drift */
+
+function probabilityDrift(){
+
+let last15=history.slice(-15)
+
+let vegCount=last15.filter(x=>veg.includes(x)).length
+let meatCount=last15.filter(x=>meat.includes(x)).length
+
+if(vegCount-meatCount>6) return "Vegetable Drift"
+
+if(meatCount-vegCount>6) return "Meat Drift"
+
+return "Stable"
+
+}
+
+/* Game Behaviour */
+
+function gameBehaviour(){
+
+let last8=history.slice(-8)
+
+let counts={}
+foods.forEach(f=>counts[f]=0)
+
+last8.forEach(f=>counts[f]++)
+
+let max=Math.max(...Object.values(counts))
+let dominant=Object.keys(counts).find(k=>counts[k]==max)
+
+if(max>=4){
+return "Bias Push → "+emoji[dominant]
+}
+
+return "Normal Behaviour"
+
+}
+
 /* AI Score */
 
 function aiScores(){
@@ -226,7 +320,6 @@ foods.forEach(food=>{
 scores[food]+=patternScore(food)
 scores[food]+=markovScore(food)
 scores[food]+=momentum[food]
-scores[food]+=absenceScore(food)
 scores[food]+=waveScore(food)
 scores[food]+=trapScore(food)
 
@@ -320,6 +413,15 @@ history.slice(-20).map(x=>emoji[x]).join(" ")
 
 document.getElementById("repeat").innerHTML=repeat()
 
+document.getElementById("absence").innerHTML=
+foods.map(f=>emoji[f]+" "+absence(f)).join(" | ")
+
+document.getElementById("cycle").innerHTML=cycleDetector()
+
+document.getElementById("drift").innerHTML=probabilityDrift()
+
+document.getElementById("behaviour").innerHTML=gameBehaviour()
+
 let s=aiScores()
 
 drawRadar(s)
@@ -370,5 +472,7 @@ document.getElementById("accuracy").innerHTML=acc+"%"
 
 update()
 
-</script></body>
+</script>
+
+</body>
 </html>
